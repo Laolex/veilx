@@ -14,7 +14,7 @@ export function Header() {
           <div className="logo-icon">V</div>
           <div>
             <div className="logo-title">VeilX</div>
-            <div className="logo-sub">Confidential Token Registry</div>
+            <div className="logo-sub">Powered by Zama fhEVM</div>
           </div>
         </div>
 

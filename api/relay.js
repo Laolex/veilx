@@ -12,7 +12,17 @@ const FORWARD_HEADERS = new Set([
   "x-zama-client",
   "zama-sdk-version",
   "zama-sdk-name",
+  "authorization",
 ]);
+
+function isTextContentType(ct) {
+  if (!ct) return false;
+  return (
+    ct.includes("application/json") ||
+    ct.includes("text/") ||
+    ct.includes("application/x-www-form-urlencoded")
+  );
+}
 
 export default async function handler(req) {
   if (req.method === "OPTIONS") {
@@ -20,7 +30,7 @@ export default async function handler(req) {
       status: 204,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "*",
       },
     });
@@ -48,13 +58,16 @@ export default async function handler(req) {
     method: req.method,
     headers: fwdHeaders,
     body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
+    duplex: "half",
   });
 
   const contentType = response.headers.get("content-type") ?? "application/octet-stream";
-  const data =
-    contentType.includes("application/octet-stream") || contentType.includes("binary")
-      ? await response.arrayBuffer()
-      : await response.text();
+
+  // Default to arrayBuffer — only decode as text when we're certain it's text.
+  // Binary data (protobuf, WASM params, proofs) must not be decoded as UTF-8.
+  const data = isTextContentType(contentType)
+    ? await response.text()
+    : await response.arrayBuffer();
 
   return new Response(data, {
     status: response.status,

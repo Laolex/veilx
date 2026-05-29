@@ -84,8 +84,11 @@ export function WrapModal({ pair, onClose }: Props) {
     } catch (e) {
       const msg = matchZamaError(e as Error, {
         SIGNING_REJECTED: () => "Transaction cancelled",
-        INSUFFICIENT_ERC20_BALANCE: () =>
-          `Not enough ${pair.symbol ?? "tokens"}`,
+        INSUFFICIENT_ERC20_BALANCE: () => `Not enough ${pair.symbol ?? "tokens"} — mint more from the Faucet`,
+        APPROVAL_FAILED: () => "ERC-20 approval failed — try again",
+        TRANSACTION_REVERTED: () => "Wrap transaction reverted — check your balance and try again",
+        ENCRYPTION_FAILED: () => "FHE encryption failed — reload the page and try again",
+        RELAYER_REQUEST_FAILED: () => "Relayer unreachable — check your connection",
         _: (err: unknown) =>
           (err instanceof Error ? err.message : String(err)) || "Wrap failed",
       });
@@ -101,7 +104,6 @@ export function WrapModal({ pair, onClose }: Props) {
     try {
       const result = await unshield({
         amount: parseUnits(amount, decimals),
-        skipBalanceCheck: true,
         onUnwrapSubmitted: (hash: string | undefined) => {
           if (hash) setTxHash(hash);
           setStatusMsg("Phase 1 submitted — waiting for KMS decryption…");
@@ -118,10 +120,12 @@ export function WrapModal({ pair, onClose }: Props) {
     } catch (e) {
       const msg = matchZamaError(e as Error, {
         SIGNING_REJECTED: () => "Transaction cancelled",
-        INSUFFICIENT_CONFIDENTIAL_BALANCE: () =>
-          `Not enough ${pair.cSymbol ?? "cTokens"}`,
+        INSUFFICIENT_CONFIDENTIAL_BALANCE: () => `Not enough ${pair.cSymbol ?? "cTokens"} — wrap tokens first`,
         NO_CIPHERTEXT: () => "No confidential balance — wrap tokens first",
-        BALANCE_CHECK_UNAVAILABLE: () => "Sign to verify balance first",
+        BALANCE_CHECK_UNAVAILABLE: () => "Click 'Sign to decrypt' to verify your balance first",
+        TRANSACTION_REVERTED: () => "Unshield transaction reverted — ensure you have wrapped tokens and try again",
+        ENCRYPTION_FAILED: () => "FHE encryption failed — reload the page and try again",
+        RELAYER_REQUEST_FAILED: () => "Relayer unreachable — check your connection",
         _: (err: unknown) =>
           (err instanceof Error ? err.message : String(err)) || "Unwrap failed",
       });

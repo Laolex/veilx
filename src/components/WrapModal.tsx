@@ -219,7 +219,7 @@ export function WrapModal({ pair, onClose }: Props) {
         <button
           className={`action-btn ${isPending ? "loading" : ""} ${isDone ? "success" : ""} ${isError ? "error" : ""}`}
           onClick={tab === "wrap" ? handleWrap : handleUnwrap}
-          disabled={isPending || !amount || !address}
+          disabled={isPending || isDone || !amount || !address}
         >
           {isPending && <span className="spinner" />}
           {btnLabel}

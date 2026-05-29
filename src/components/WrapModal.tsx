@@ -104,6 +104,7 @@ export function WrapModal({ pair, onClose }: Props) {
     try {
       const result = await unshield({
         amount: parseUnits(amount, decimals),
+        skipBalanceCheck: true,
         onUnwrapSubmitted: (hash: string | undefined) => {
           if (hash) setTxHash(hash);
           setStatusMsg("Phase 1 submitted — waiting for KMS decryption…");

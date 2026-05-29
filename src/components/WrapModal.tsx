@@ -41,14 +41,15 @@ export function WrapModal({ pair, onClose }: Props) {
   const decimals = pair.decimals ?? 18;
   const etherscanBase = chainId === SEPOLIA_ID ? "https://sepolia.etherscan.io" : "https://etherscan.io";
 
+  // tokenAddress = the cToken (ERC-7984 wrapper) — SDK uses this as the
+  // intended contract in the FHE input proof and calls underlying() internally
+  // to find the ERC-20 for the approval step in shield.
   const { mutateAsync: shield, isPending: shielding } = useShield({
-    tokenAddress: pair.tokenAddress,
-    wrapperAddress: pair.confidentialTokenAddress,
+    tokenAddress: pair.confidentialTokenAddress,
   });
 
   const { mutateAsync: unshield, isPending: unshielding } = useUnshield({
-    tokenAddress: pair.tokenAddress,
-    wrapperAddress: pair.confidentialTokenAddress,
+    tokenAddress: pair.confidentialTokenAddress,
   });
 
   const { data: confBalance, isLoading: confLoading, refetch: decryptBalance } = useConfidentialBalance({

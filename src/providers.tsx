@@ -1,12 +1,12 @@
 "use client";
 
-import { ReactNode, useMemo } from "react";
+import { ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ZamaProvider, RelayerWeb, indexedDBStorage, type GenericSigner } from "@zama-fhe/react-sdk";
+import { ZamaProvider, RelayerWeb, indexedDBStorage, SepoliaConfig, MainnetConfig, type GenericSigner } from "@zama-fhe/react-sdk";
 import "@rainbow-me/rainbowkit/styles.css";
-import { wagmiConfig, SEPOLIA_ID, MAINNET_ID, SEPOLIA_RPC_URL, MAINNET_RPC_URL } from "./config";
+import { wagmiConfig, SEPOLIA_ID, MAINNET_ID } from "./config";
 import { WagmiCompatSigner } from "./signer";
 
 const queryClient = new QueryClient({
@@ -19,12 +19,12 @@ const relayer = new RelayerWeb({
   getChainId: () => signer.getChainId(),
   transports: {
     [SEPOLIA_ID]: {
-      relayerUrl: `${window.location.origin}/api/relay/${SEPOLIA_ID}`,
-      network: SEPOLIA_RPC_URL,
+      ...SepoliaConfig,
+      relayerUrl: `${window.location.origin}/api/relay/${SEPOLIA_ID}/v2`,
     },
     [MAINNET_ID]: {
-      relayerUrl: `${window.location.origin}/api/relay/${MAINNET_ID}`,
-      network: MAINNET_RPC_URL,
+      ...MainnetConfig,
+      relayerUrl: `${window.location.origin}/api/relay/${MAINNET_ID}/v2`,
     },
   },
 });

@@ -12,9 +12,8 @@ export function App() {
       </main>
       <footer className="footer">
         <div className="footer-inner">
-          <span>Built on <a href="https://zama.ai" target="_blank" rel="noopener noreferrer">Zama fhEVM</a> — ERC-7984 Confidential Token Standard</span>
+          <span>ERC-7984 Confidential Token Standard — <a href="https://docs.zama.ai" target="_blank" rel="noopener noreferrer">Docs</a></span>
           <span className="footer-links">
-            <a href="https://docs.zama.ai" target="_blank" rel="noopener noreferrer">Docs</a>
             <a href="https://github.com/Laolex/zama-wrapper-registry" target="_blank" rel="noopener noreferrer">GitHub</a>
           </span>
         </div>

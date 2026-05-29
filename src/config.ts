@@ -11,8 +11,8 @@ const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC_URL ?? "https://ethereum-se
 const MAINNET_RPC = import.meta.env.VITE_MAINNET_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
 
 export const wagmiConfig = getDefaultConfig({
-  appName: "Zama Wrapper Registry",
-  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "zama-wrapper-registry",
+  appName: "VeilX",
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "veilx",
   chains: [sepolia, mainnet],
   transports: {
     [SEPOLIA_ID]: http(SEPOLIA_RPC),

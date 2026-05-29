@@ -11,10 +11,10 @@ export function Header() {
     <header className="header">
       <div className="header-inner">
         <div className="logo">
-          <div className="logo-icon">Z</div>
+          <div className="logo-icon">V</div>
           <div>
-            <div className="logo-title">Wrapper Registry</div>
-            <div className="logo-sub">Powered by Zama fhEVM</div>
+            <div className="logo-title">VeilX</div>
+            <div className="logo-sub">Confidential Token Registry</div>
           </div>
         </div>
 

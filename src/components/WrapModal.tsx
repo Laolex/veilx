@@ -51,7 +51,7 @@ export function WrapModal({ pair, onClose }: Props) {
     wrapperAddress: pair.confidentialTokenAddress,
   });
 
-  const { data: confBalance, isLoading: confLoading } = useConfidentialBalance({
+  const { data: confBalance, isLoading: confLoading, refetch: decryptBalance } = useConfidentialBalance({
     tokenAddress: pair.confidentialTokenAddress,
   });
 
@@ -101,6 +101,7 @@ export function WrapModal({ pair, onClose }: Props) {
     try {
       const result = await unshield({
         amount: parseUnits(amount, decimals),
+        skipBalanceCheck: true,
         onUnwrapSubmitted: (hash: string | undefined) => {
           if (hash) setTxHash(hash);
           setStatusMsg("Phase 1 submitted — waiting for KMS decryption…");
@@ -171,7 +172,7 @@ export function WrapModal({ pair, onClose }: Props) {
                 ? <span className="loading-dots">Decrypting…</span>
                 : confBalance !== undefined
                   ? fmtBalance(confBalance, decimals)
-                  : <span className="muted">Sign to decrypt</span>
+                  : <button className="decrypt-btn" onClick={() => decryptBalance()}>Sign to decrypt ↗</button>
               }
             </div>
           </div>

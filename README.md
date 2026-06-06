@@ -2,9 +2,17 @@
 
 > One place to discover every ERC-20 ↔ ERC-7984 confidential-token pair on Zama's protocol — and wrap, unwrap, and privately read your encrypted balance, right in the browser.
 
-**Live demo → [veilx.vercel.app](https://veilx.vercel.app)** · Powered by [Zama fhEVM](https://zama.org) and the [ERC-7984](https://docs.zama.org/protocol/examples/openzeppelin-confidential-contracts/erc7984) confidential token standard.
+**Live demo → [veilx-app.vercel.app](https://veilx-app.vercel.app)** · Powered by [Zama fhEVM](https://zama.org) and the [ERC-7984](https://docs.zama.org/protocol/examples/openzeppelin-confidential-contracts/erc7984) confidential token standard.
 
 > 🏆 Built for the **Zama Developer Program — Mainnet Season 3, Bounty Track**: the Confidential Wrapper Registry challenge. Surfaces every ERC-20 ↔ ERC-7984 wrapper pair on **testnet and mainnet**, lets users **wrap/unwrap**, **decrypt any ERC-7984 balance**, and ships a **Sepolia faucet** for the official cTokenMocks.
+
+![VeilX registry](docs/screenshot-registry.png)
+
+<p align="center"><em>The wrapper registry — every ERC-20 ↔ cToken pair, live from chain.</em></p>
+
+![VeilX wrap/unwrap](docs/screenshot-wrap.png)
+
+<p align="center"><em>Wrap, unwrap, and reveal your encrypted balance in one modal.</em></p>
 
 ![Networks](https://img.shields.io/badge/network-Sepolia%20%2B%20Ethereum-7c3aed) ![Standard](https://img.shields.io/badge/standard-ERC--7984-7c3aed) ![SDK](https://img.shields.io/badge/Zama-react--sdk%20v3-7c3aed) ![License](https://img.shields.io/badge/license-MIT-green)
 

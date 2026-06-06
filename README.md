@@ -1,0 +1,121 @@
+# VeilX — Confidential Wrapper Registry
+
+> One place to discover every ERC-20 ↔ ERC-7984 confidential-token pair on Zama's protocol — and wrap, unwrap, and privately read your encrypted balance, right in the browser.
+
+**Live demo → [veilx.vercel.app](https://veilx.vercel.app)** · Powered by [Zama fhEVM](https://zama.org) and the [ERC-7984](https://docs.zama.org/protocol/examples/openzeppelin-confidential-contracts/erc7984) confidential token standard.
+
+> 🏆 Built for the **Zama Developer Program — Mainnet Season 3, Bounty Track**: the Confidential Wrapper Registry challenge. Surfaces every ERC-20 ↔ ERC-7984 wrapper pair on **testnet and mainnet**, lets users **wrap/unwrap**, **decrypt any ERC-7984 balance**, and ships a **Sepolia faucet** for the official cTokenMocks.
+
+![Networks](https://img.shields.io/badge/network-Sepolia%20%2B%20Ethereum-7c3aed) ![Standard](https://img.shields.io/badge/standard-ERC--7984-7c3aed) ![SDK](https://img.shields.io/badge/Zama-react--sdk%20v3-7c3aed) ![License](https://img.shields.io/badge/license-MIT-green)
+
+---
+
+## The problem
+
+ERC-7984 ("confidential ERC-20") keeps balances and transfer amounts **encrypted on-chain**. To move value into that private world you *wrap* a normal ERC-20 into its confidential counterpart (a cToken); to exit you *unwrap*. But the confidential wrappers are scattered across raw contract addresses with **no place to discover them and no UI to use them** — you're left pasting addresses into a block explorer and hand-crafting encrypted inputs.
+
+**VeilX is the missing front door.** It reads Zama's on-chain wrapper registry and turns it into a browsable, usable app: see every registered pair, mint test tokens, wrap into confidentiality, unwrap back out, and reveal your own encrypted balance — all without leaving the page.
+
+## What it does
+
+- **📖 Registry explorer** — reads the on-chain `getTokenConfidentialTokenPairs()` registry and renders every ERC-20 ↔ cToken pair, with live token metadata (symbol/name/decimals fetched on-chain), validity status (✓ active / ✗ revoked), copyable addresses, and Etherscan links.
+- **🔄 Wrap → confidential** — approve + `wrap()` an ERC-20 into its ERC-7984 cToken in one flow; your balance becomes an encrypted handle.
+- **🔓 Unwrap → public** — the ERC-7984 **two-phase, gateway-mediated withdrawal**: phase 1 burns the encrypted amount; phase 2 finalizes once the KMS decrypts it and releases the underlying. Both steps are driven automatically.
+- **👁 Reveal your encrypted balance** — sign once (EIP-712) and the relayer `userDecrypt`s *your* cToken balance client-side — visible only to you, never on-chain.
+- **🚰 Faucet** — mint the mintable mock ERC-20s so anyone can try the full flow with zero setup.
+- **🌐 Multi-chain** — Sepolia and Ethereum mainnet, switchable in-app, each routed to the correct Zama relayer.
+
+## How it works
+
+```
+┌────────────────┐   reads      ┌──────────────────────────┐
+│   VeilX (SPA)  │ ───────────▶ │  Wrapper Registry (chain) │  getTokenConfidentialTokenPairs()
+│  React + viem  │              └──────────────────────────┘
+│  @zama-fhe/    │
+│  react-sdk v3  │   wrap/unwrap ┌──────────────────────────┐
+│                │ ────────────▶ │  ERC-7984 cToken wrapper  │  wrap() / unwrap() / finalizeUnwrap()
+│                │              └──────────────────────────┘
+│                │   encrypt /   ┌──────────────────────────┐
+│                │   decrypt     │  Vercel Edge relay proxy  │ ─▶ Zama relayer (per chain)
+└────────────────┘ ────────────▶ │  /api/relay/:chainId/*    │    (KMS public/user decrypt)
+                                 └──────────────────────────┘
+```
+
+- **No custom contracts.** VeilX is a pure client that composes Zama's deployed primitives — the wrapper registry, the ERC-7984 cToken wrappers, and the relayer/KMS. That's the point: the standard and the registry are the product; VeilX makes them usable.
+- **Encrypted inputs & proofs** are built with `@zama-fhe/react-sdk` v3 (`useShield` / `useUnshield` / `useConfidentialBalance`), which handle the FHE input proofs, the two-phase unwrap finalize loop, and the EIP-712 `userDecrypt` grant.
+- **Relayer proxy** ([`api/relay.js`](api/relay.js)) is a Vercel Edge Function that forwards to the correct Zama relayer per `chainId`, preserving binary payloads (proofs/params) and CORS — so the browser never talks to the relayer cross-origin.
+- **COOP/COEP/CSP headers** ([`vercel.json`](vercel.json)) are tuned so the FHE WASM worker can load keys/CRS from S3 (`credentialless` COEP) while keeping cross-origin isolation for `SharedArrayBuffer`.
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Frontend | React 18 + Vite + TypeScript |
+| Chain I/O | wagmi v2 + viem v2 |
+| Wallet | RainbowKit (injected + WalletConnect) |
+| FHE | `@zama-fhe/react-sdk` v3 / `@zama-fhe/sdk` v3 |
+| Relay | Vercel Edge Function (per-chain proxy) |
+| Hosting | Vercel |
+
+## Supported networks & addresses
+
+| | Sepolia | Ethereum |
+|---|---|---|
+| Wrapper registry | `0x2f0750Bbb0A246059d80e94c454586a7F27a128e` | `0xeb5015fF021DB115aCe010f23F55C2591059bBA0` |
+| Pairs | 8 registered | 8 registered |
+| Relayer | `relayer.testnet.zama.org` | `relayer.mainnet.zama.org` |
+
+Sepolia ships mintable mock pairs (cUSDC, cUSDT, cWETH, cZAMA, …) so the wrap→reveal→unwrap loop is fully testable without acquiring real assets.
+
+## Run locally
+
+```bash
+git clone https://github.com/Laolex/veilx
+cd veilx
+npm install
+
+cp .env.example .env        # then fill in (all optional except WalletConnect)
+npm run dev                 # http://localhost:5173
+```
+
+Environment (`.env`):
+
+```bash
+VITE_WALLETCONNECT_PROJECT_ID=   # from https://cloud.reown.com (WalletConnect wallets)
+VITE_SEPOLIA_RPC_URL=            # optional; defaults to a public endpoint
+VITE_MAINNET_RPC_URL=            # optional
+```
+
+> Local dev proxies the relayer through Vite; in production the same calls route through the `api/relay` Edge Function. Cross-origin isolation headers are required for the FHE worker — they're set in `vite.config.ts` (dev) and `vercel.json` (prod).
+
+```bash
+npm run build       # tsc + vite build
+npm run preview     # serve the production build
+```
+
+## Project layout
+
+```
+src/
+  config.ts                 # chains, registry addresses, ABIs, known mock pairs
+  providers.tsx             # wagmi + RainbowKit + ZamaProvider (relayer + signer wiring)
+  signer.ts                 # wagmi → Zama GenericSigner adapter
+  hooks/
+    useRegistryPairs.ts     # reads the registry + enriches with on-chain token metadata
+    useMint.ts              # faucet mint for mock ERC-20s
+  components/
+    RegistryGrid.tsx        # pair cards, chain toggle, stats
+    WrapModal.tsx           # wrap / unwrap / reveal-balance flow
+    Faucet.tsx              # mint test tokens
+    Header.tsx              # wallet connect + network switch
+api/
+  relay.js                  # Vercel Edge relayer proxy (per-chain, binary-safe)
+```
+
+## Privacy model
+
+Balances and transfer amounts inside an ERC-7984 cToken are **encrypted on-chain**. VeilX never decrypts them for anyone but the holder: revealing your balance requires *your* signature over an ephemeral EIP-712 grant, and the relayer returns the cleartext only to you. Wrapping makes value private; unwrapping is the only point a cleartext amount re-enters the public ledger, and only for the amount you choose to withdraw.
+
+## License
+
+[MIT](LICENSE) © 2026 Laolex

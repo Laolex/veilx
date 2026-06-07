@@ -7,12 +7,14 @@ import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 export const SEPOLIA_ID = sepolia.id;   // 11155111
 export const MAINNET_ID = mainnet.id;  // 1
 
-const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com";
-const MAINNET_RPC = import.meta.env.VITE_MAINNET_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
+// .trim() guards against a trailing newline pasted into a Vercel env var — an
+// untrimmed RPC URL or projectId causes opaque fetch/ENS failures.
+const SEPOLIA_RPC = (import.meta.env.VITE_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com").trim();
+const MAINNET_RPC = (import.meta.env.VITE_MAINNET_RPC_URL ?? "https://ethereum-rpc.publicnode.com").trim();
 
 export const wagmiConfig = getDefaultConfig({
   appName: "VeilX",
-  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "veilx",
+  projectId: (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "veilx").trim(),
   chains: [sepolia, mainnet],
   transports: {
     [SEPOLIA_ID]: http(SEPOLIA_RPC),

@@ -13,7 +13,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/relay/:chainId/:path*", "destination": "/api/relay" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

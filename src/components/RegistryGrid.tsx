@@ -168,7 +168,7 @@ export function RegistryGrid() {
       )}
 
       {selectedPair && (
-        <WrapModal pair={selectedPair} onClose={() => setSelectedPair(null)} />
+        <WrapModal pair={selectedPair} pairChainId={viewChain} onClose={() => setSelectedPair(null)} />
       )}
     </section>
   );

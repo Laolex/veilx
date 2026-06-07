@@ -499,6 +499,30 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   line-height: 1.5;
 }
 
+.kms-wait {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.kms-wait-text strong { color: var(--accent-hi); font-weight: 600; }
+.kms-wait-elapsed { color: var(--accent-hi); font-family: "JetBrains Mono", monospace; white-space: nowrap; }
+.kms-wait-spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(124, 58, 237, 0.25);
+  border-top-color: var(--accent-hi);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
 .addr-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -48,6 +48,9 @@ export function WrapModal({ pair, pairChainId, onClose }: Props) {
   const [isDone, setIsDone] = useState(false);
   // Confidential balance stays hidden until the user explicitly signs to decrypt.
   const [revealed, setRevealed] = useState(false);
+  // Seconds elapsed during an in-flight unwrap — powers the "wait a sec" hint so
+  // a 1–3 min KMS wait reads as progressing, not dead.
+  const [unwrapElapsed, setUnwrapElapsed] = useState(0);
   // True only while an unwrap is in flight — gates the global SDK event stream so
   // we don't pick up events from other operations (e.g. a wrap or a decrypt).
   const unwrapActiveRef = useRef(false);
@@ -153,6 +156,20 @@ export function WrapModal({ pair, pairChainId, onClose }: Props) {
   }, [pair.confidentialTokenAddress]);
 
   const isPending = shielding || unshielding;
+
+  // Tick the elapsed counter while an unwrap is running; reset when it ends.
+  useEffect(() => {
+    if (!unshielding) {
+      setUnwrapElapsed(0);
+      return;
+    }
+    setUnwrapElapsed(0);
+    const started = performance.now();
+    const t = setInterval(() => {
+      setUnwrapElapsed(Math.floor((performance.now() - started) / 1000));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [unshielding]);
 
   function resetStatus() {
     setStatusMsg("");
@@ -371,6 +388,20 @@ export function WrapModal({ pair, pairChainId, onClose }: Props) {
             {isPending && <span className="spinner" />}
             {btnLabel}
           </button>
+        )}
+
+        {/* "Wait a sec" — reassurance during the long KMS/finalize wait */}
+        {unshielding && (
+          <div className="kms-wait">
+            <span className="kms-wait-spinner" />
+            <span className="kms-wait-text">
+              {unwrapElapsed < 150
+                ? <>Wait a sec — Sepolia's KMS is decrypting your amount on-chain. Unwraps usually take <strong>1–3 min</strong>.</>
+                : <>Still going — the testnet's running slow, but your unwrap is alive and will finish.</>
+              }
+              {" "}<span className="kms-wait-elapsed">{unwrapElapsed}s elapsed</span>
+            </span>
+          </div>
         )}
 
         {/* Status/error message */}

@@ -48,6 +48,8 @@ export function WrapModal({ pair, pairChainId, onClose }: Props) {
   const [isDone, setIsDone] = useState(false);
   // Confidential balance stays hidden until the user explicitly signs to decrypt.
   const [revealed, setRevealed] = useState(false);
+  // Set when a balance decrypt fails so the failure isn't a silent button reset.
+  const [decryptError, setDecryptError] = useState("");
   // Seconds elapsed during an in-flight unwrap — powers the "wait a sec" hint so
   // a 1–3 min KMS wait reads as progressing, not dead.
   const [unwrapElapsed, setUnwrapElapsed] = useState(0);
@@ -117,15 +119,27 @@ export function WrapModal({ pair, pairChainId, onClose }: Props) {
   // Hide a previously-revealed balance again if the wallet/account changes.
   useEffect(() => {
     setRevealed(false);
+    setDecryptError("");
   }, [address, pair.confidentialTokenAddress]);
 
   const handleDecrypt = useCallback(async () => {
     if (wrongChain) return; // decryption is keyed by the connected chain — must match first
+    setDecryptError("");
     setRevealed(true);
     try {
-      await decryptBalance();
+      // refetch() never throws — TanStack Query parks failures on result.error.
+      const res = await decryptBalance();
+      if (res.error) throw res.error;
     } catch (e) {
       console.error("[VeilX] confidential balance decrypt failed:", e);
+      const msg = matchZamaError(e as Error, {
+        SIGNING_REJECTED: () => "Signature cancelled",
+        NO_CIPHERTEXT: () => "No confidential balance yet — wrap tokens first",
+        RELAYER_REQUEST_FAILED: () => "Relayer unreachable — try again",
+        _: (err: unknown) =>
+          err instanceof Error && err.message ? `Decrypt failed: ${err.message}` : "Decrypt failed — try again",
+      });
+      setDecryptError(msg ?? "Decrypt failed — try again");
     }
   }, [decryptBalance, wrongChain]);
 
@@ -335,6 +349,7 @@ export function WrapModal({ pair, pairChainId, onClose }: Props) {
                     : <button className="decrypt-btn" onClick={handleDecrypt}>Sign to decrypt ↗</button>
               }
             </div>
+            {decryptError && !confFetching && <div className="decrypt-error">{decryptError}</div>}
           </div>
         </div>
 

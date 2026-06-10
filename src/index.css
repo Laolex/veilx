@@ -392,6 +392,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .loading-dots { color: var(--text-muted); font-size: 13px; }
 .muted { color: var(--text-muted); font-size: 13px; font-family: Inter, sans-serif; font-weight: 400; }
 .decrypt-btn { background: none; border: none; color: var(--conf-hi); font-size: 13px; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.decrypt-error { margin-top: 6px; font-size: 12px; line-height: 1.4; color: var(--danger); }
 
 .tabs {
   display: flex;

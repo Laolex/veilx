@@ -44,15 +44,16 @@ ERC-7984 ("confidential ERC-20") keeps balances and transfer amounts **encrypted
 │                │ ────────────▶ │  ERC-7984 cToken wrapper  │  wrap() / unwrap() / finalizeUnwrap()
 │                │              └──────────────────────────┘
 │                │   encrypt /   ┌──────────────────────────┐
-│                │   decrypt     │  Vercel Edge relay proxy  │ ─▶ Zama relayer (per chain)
-└────────────────┘ ────────────▶ │  /api/relay/:chainId/*    │    (KMS public/user decrypt)
+│                │   decrypt     │  Zama relayer (per chain) │    (KMS public/user decrypt)
+└────────────────┘ ────────────▶ │  relayer.{net}.zama.org   │    input proofs + EIP-712 grant
                                  └──────────────────────────┘
 ```
 
 - **No custom contracts.** VeilX is a pure client that composes Zama's deployed primitives — the wrapper registry, the ERC-7984 cToken wrappers, and the relayer/KMS. That's the point: the standard and the registry are the product; VeilX makes them usable.
 - **Encrypted inputs & proofs** are built with `@zama-fhe/react-sdk` v3 (`useShield` / `useUnshield` / `useConfidentialBalance`), which handle the FHE input proofs, the two-phase unwrap finalize loop, and the EIP-712 `userDecrypt` grant.
-- **Relayer proxy** ([`api/relay.js`](api/relay.js)) is a Vercel Edge Function that forwards to the correct Zama relayer per `chainId`, preserving binary payloads (proofs/params) and CORS — so the browser never talks to the relayer cross-origin.
+- **Direct relayer, no proxy.** The browser talks to the Zama relayer directly ([`providers.tsx`](src/providers.tsx)) via `SepoliaConfig`/`MainnetConfig`, keyed by the connected `chainId`. The relayer already serves correct CORS, and CORS-mode fetches are exempt from `credentialless` COEP's CORP requirement — so no edge proxy is needed. (An earlier `/api/relay` proxy hop was removed because its cold-start + buffering latency pushed the heavy input-proof call past the SDK's hard ENCRYPT timeout, breaking unwrap.)
 - **COOP/COEP/CSP headers** ([`vercel.json`](vercel.json)) are tuned so the FHE WASM worker can load keys/CRS from S3 (`credentialless` COEP) while keeping cross-origin isolation for `SharedArrayBuffer`.
+- **120s worker timeout.** A build-time Vite transform ([`vite.config.ts`](vite.config.ts)) lifts the relayer SDK's hard-coded 30s Web Worker timeout to 120s, so the testnet's slower input-proof verification doesn't get cancelled mid-poll.
 
 ## Tech stack
 
@@ -94,7 +95,7 @@ VITE_SEPOLIA_RPC_URL=            # optional; defaults to a public endpoint
 VITE_MAINNET_RPC_URL=            # optional
 ```
 
-> Local dev proxies the relayer through Vite; in production the same calls route through the `api/relay` Edge Function. Cross-origin isolation headers are required for the FHE worker — they're set in `vite.config.ts` (dev) and `vercel.json` (prod).
+> The browser calls the Zama relayer directly in both dev and production (no proxy). Cross-origin isolation headers are required for the FHE worker — they're set in `vite.config.ts` (dev) and `vercel.json` (prod).
 
 ```bash
 npm run build       # tsc + vite build
@@ -116,8 +117,11 @@ src/
     WrapModal.tsx           # wrap / unwrap / reveal-balance flow
     Faucet.tsx              # mint test tokens
     Header.tsx              # wallet connect + network switch
-api/
-  relay.js                  # Vercel Edge relayer proxy (per-chain, binary-safe)
+  lib/
+    fheEvents.ts            # pub/sub bridge for the SDK's lifecycle events
+    telemetry.ts            # client-side stage timing for the unwrap pipeline
+vite.config.ts              # build + 30s→120s relayer worker-timeout patch
+vercel.json                 # COOP/COEP/CSP headers + SPA rewrite
 ```
 
 ## Privacy model

@@ -12,7 +12,7 @@ export function App() {
       </main>
       <footer className="footer">
         <div className="footer-inner">
-          <span>ERC-7984 Confidential Token Standard — <a href="https://docs.zama.ai" target="_blank" rel="noopener noreferrer">Docs</a></span>
+          <span>ERC-7984 Confidential Token Standard — <a href="https://docs.zama.org/protocol" target="_blank" rel="noopener noreferrer">Docs</a></span>
           <span className="footer-links">
             <a href="https://github.com/Laolex/veilx" target="_blank" rel="noopener noreferrer">GitHub</a>
           </span>

@@ -51,7 +51,7 @@ ERC-7984 ("confidential ERC-20") keeps balances and transfer amounts **encrypted
 
 - **No custom contracts.** VeilX is a pure client that composes Zama's deployed primitives — the wrapper registry, the ERC-7984 cToken wrappers, and the relayer/KMS. That's the point: the standard and the registry are the product; VeilX makes them usable.
 - **Encrypted inputs & proofs** are built with `@zama-fhe/react-sdk` v3 (`useShield` / `useUnshield` / `useConfidentialBalance`), which handle the FHE input proofs, the two-phase unwrap finalize loop, and the EIP-712 `userDecrypt` grant.
-- **Direct relayer, no proxy.** The browser talks to the Zama relayer directly ([`providers.tsx`](src/providers.tsx)) via `SepoliaConfig`/`MainnetConfig`, keyed by the connected `chainId`. The relayer already serves correct CORS, and CORS-mode fetches are exempt from `credentialless` COEP's CORP requirement — so no edge proxy is needed. (An earlier `/api/relay` proxy hop was removed because its cold-start + buffering latency pushed the heavy input-proof call past the SDK's hard ENCRYPT timeout, breaking unwrap.)
+- **Direct relayer, no proxy.** The browser talks to the Zama relayer directly ([`providers.tsx`](src/providers.tsx)) via `SepoliaConfig`/`MainnetConfig`, keyed by the connected `chainId`. The relayer already serves correct CORS, and CORS-mode fetches are exempt from `credentialless` COEP's CORP requirement — so no edge proxy is needed. Proof generation runs multi-threaded (`RelayerWeb({ threads })`, 4–8, auto-falling back to single-thread without `SharedArrayBuffer`). (An earlier `/api/relay` proxy hop was removed because its cold-start + buffering latency pushed the heavy input-proof call past the SDK's hard ENCRYPT timeout, breaking unwrap.)
 - **COOP/COEP/CSP headers** ([`vercel.json`](vercel.json)) are tuned so the FHE WASM worker can load keys/CRS from S3 (`credentialless` COEP) while keeping cross-origin isolation for `SharedArrayBuffer`.
 - **120s worker timeout.** A build-time Vite transform ([`vite.config.ts`](vite.config.ts)) lifts the relayer SDK's hard-coded 30s Web Worker timeout to 120s, so the testnet's slower input-proof verification doesn't get cancelled mid-poll.
 
@@ -63,7 +63,7 @@ ERC-7984 ("confidential ERC-20") keeps balances and transfer amounts **encrypted
 | Chain I/O | wagmi v2 + viem v2 |
 | Wallet | RainbowKit (injected + WalletConnect) |
 | FHE | `@zama-fhe/react-sdk` v3 / `@zama-fhe/sdk` v3 |
-| Relay | Vercel Edge Function (per-chain proxy) |
+| Relay | Direct to Zama relayer (per-chain, multi-threaded proofs) |
 | Hosting | Vercel |
 
 ## Supported networks & addresses
@@ -123,6 +123,28 @@ src/
 vite.config.ts              # build + 30s→120s relayer worker-timeout patch
 vercel.json                 # COOP/COEP/CSP headers + SPA rewrite
 ```
+
+## Adding a new ERC-20 ↔ ERC-7984 pair
+
+The registry is read **live from chain**, so most of the time there's nothing to do:
+
+1. **Register the pair on-chain** in Zama's wrapper registry (deploy/point an ERC-7984 wrapper at the underlying ERC-20 and register the pair). VeilX calls `getTokenConfidentialTokenPairs()` on each render, so the new pair shows up in the grid automatically — symbol, name, and decimals are fetched on-chain — and is immediately wrappable/unwrappable. **No frontend change required.**
+2. **(Optional) Expose a faucet button** for a mintable mock: append one entry to `SEPOLIA_MOCKS` in [`src/config.ts`](src/config.ts) —
+
+   ```ts
+   {
+     symbol: "FOOMock",
+     cSymbol: "cFOOMock",
+     underlying: "0x…",   // mintable ERC-20 (public mint(address,uint256))
+     wrapper:    "0x…",   // its ERC-7984 cToken
+     decimals: 18,
+     isMock: true,
+   }
+   ```
+
+   That's the only code touch, and only for faucet minting — discovery, wrap/unwrap, and decrypt all work off the on-chain registry without it.
+
+To support a **new network** entirely, add its registry address to `REGISTRY_ADDRESS`, its chain + RPC to `wagmiConfig`, and its `*Config` transport to the `RelayerWeb` map in [`src/providers.tsx`](src/providers.tsx).
 
 ## Privacy model
 

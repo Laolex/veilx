@@ -611,6 +611,45 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 .faucet-error { font-size: 12px; color: var(--danger); }
 
+/* ── Source badge (local custom pairs) ───────────────────────────────────────── */
+.badge-stack { display: flex; align-items: center; gap: 8px; }
+.source-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.source-badge.local {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warn);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* ── Decrypt any ERC-7984 ────────────────────────────────────────────────────── */
+.decryptany-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.decryptany-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(5, 150, 105, 0.08);
+  border: 1px solid rgba(5, 150, 105, 0.25);
+  border-radius: var(--radius-sm);
+}
+.decryptany-result-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.decryptany-result-val { font-size: 18px; font-weight: 700; font-family: "JetBrains Mono", monospace; color: var(--conf-hi); }
+
 /* ── Footer ─────────────────────────────────────────────────────────────────── */
 .footer {
   border-top: 1px solid var(--border);

@@ -39,9 +39,14 @@ function PairCard({
           </div>
           <div className="token-badge conf">{cSymbol}</div>
         </div>
-        <span className={`validity-badge ${pair.isValid ? "valid" : "revoked"}`}>
-          {pair.isValid ? "✓ Active" : "✗ Revoked"}
-        </span>
+        <div className="badge-stack">
+          {pair.source === "local" && (
+            <span className="source-badge local" title="Declared in local CUSTOM_PAIRS config, not the on-chain registry">local</span>
+          )}
+          <span className={`validity-badge ${pair.isValid ? "valid" : "revoked"}`}>
+            {pair.isValid ? "✓ Active" : "✗ Revoked"}
+          </span>
+        </div>
       </div>
 
       {pair.name && <div className="pair-name">{pair.name}</div>}
@@ -159,11 +164,17 @@ export function RegistryGrid() {
 
       {pairs.length > 0 && !isLoading && (
         <div className="registry-stats">
-          <span>{pairs.filter((p) => p.isValid).length} active pairs</span>
+          <span>{pairs.filter((p) => p.source === "onchain").length} on-chain</span>
+          {pairs.some((p) => p.source === "local") && (
+            <>
+              <span>·</span>
+              <span>{pairs.filter((p) => p.source === "local").length} local</span>
+            </>
+          )}
+          <span>·</span>
+          <span>{pairs.filter((p) => p.isValid).length} active</span>
           <span>·</span>
           <span>{pairs.filter((p) => !p.isValid).length} revoked</span>
-          <span>·</span>
-          <span>{pairs.length} total</span>
         </div>
       )}
 

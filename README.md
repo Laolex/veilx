@@ -26,10 +26,11 @@ ERC-7984 ("confidential ERC-20") keeps balances and transfer amounts **encrypted
 
 ## What it does
 
-- **📖 Registry explorer** — reads the on-chain `getTokenConfidentialTokenPairs()` registry and renders every ERC-20 ↔ cToken pair, with live token metadata (symbol/name/decimals fetched on-chain), validity status (✓ active / ✗ revoked), copyable addresses, and Etherscan links.
+- **📖 Hybrid registry explorer** — reads the on-chain `getTokenConfidentialTokenPairs()` registry as the **primary source of truth**, and merges in any **local `CUSTOM_PAIRS`** (dev-only or not-yet-registered pairs) on top — on-chain wins on collision, local pairs get a `local` badge. Each card shows live token metadata (symbol/name/decimals fetched on-chain), validity status (✓ active / ✗ revoked), copyable addresses, and Etherscan links.
 - **🔄 Wrap → confidential** — approve + `wrap()` an ERC-20 into its ERC-7984 cToken in one flow; your balance becomes an encrypted handle.
 - **🔓 Unwrap → public** — the ERC-7984 **two-phase, gateway-mediated withdrawal**: phase 1 burns the encrypted amount; phase 2 finalizes once the KMS decrypts it and releases the underlying. Both steps are driven automatically.
 - **👁 Reveal your encrypted balance** — sign once (EIP-712) and the relayer `userDecrypt`s *your* cToken balance client-side — visible only to you, never on-chain.
+- **🔎 Decrypt ANY ERC-7984** — a dedicated panel: paste *any* confidential-token address (registered or not), sign once, and reveal your own balance for it. Not limited to registry pairs.
 - **🚰 Faucet** — mint the mintable mock ERC-20s so anyone can try the full flow with zero setup.
 - **🌐 Multi-chain** — Sepolia and Ethereum mainnet, switchable in-app, each routed to the correct Zama relayer.
 
@@ -50,6 +51,7 @@ ERC-7984 ("confidential ERC-20") keeps balances and transfer amounts **encrypted
 ```
 
 - **No custom contracts.** VeilX is a pure client that composes Zama's deployed primitives — the wrapper registry, the ERC-7984 cToken wrappers, and the relayer/KMS. That's the point: the standard and the registry are the product; VeilX makes them usable.
+- **Hybrid registry sourcing** ([`useRegistryPairs.ts`](src/hooks/useRegistryPairs.ts)) — the on-chain registry is read first and is authoritative; `CUSTOM_PAIRS` from [`config.ts`](src/config.ts) is appended for local/dev pairs, deduped against on-chain by confidential-token address. See [Adding a new pair](#adding-a-new-erc-20--erc-7984-pair).
 - **Encrypted inputs & proofs** are built with `@zama-fhe/react-sdk` v3 (`useShield` / `useUnshield` / `useConfidentialBalance`), which handle the FHE input proofs, the two-phase unwrap finalize loop, and the EIP-712 `userDecrypt` grant.
 - **Direct relayer, no proxy.** The browser talks to the Zama relayer directly ([`providers.tsx`](src/providers.tsx)) via `SepoliaConfig`/`MainnetConfig`, keyed by the connected `chainId`. The relayer already serves correct CORS, and CORS-mode fetches are exempt from `credentialless` COEP's CORP requirement — so no edge proxy is needed. Proof generation runs multi-threaded (`RelayerWeb({ threads })`, 4–8, auto-falling back to single-thread without `SharedArrayBuffer`). (An earlier `/api/relay` proxy hop was removed because its cold-start + buffering latency pushed the heavy input-proof call past the SDK's hard ENCRYPT timeout, breaking unwrap.)
 - **COOP/COEP/CSP headers** ([`vercel.json`](vercel.json)) are tuned so the FHE WASM worker can load keys/CRS from S3 (`credentialless` COEP) while keeping cross-origin isolation for `SharedArrayBuffer`.
@@ -113,8 +115,9 @@ src/
     useRegistryPairs.ts     # reads the registry + enriches with on-chain token metadata
     useMint.ts              # faucet mint for mock ERC-20s
   components/
-    RegistryGrid.tsx        # pair cards, chain toggle, stats
+    RegistryGrid.tsx        # pair cards (on-chain + local), chain toggle, stats
     WrapModal.tsx           # wrap / unwrap / reveal-balance flow
+    DecryptAny.tsx          # decrypt your balance for ANY ERC-7984 address
     Faucet.tsx              # mint test tokens
     Header.tsx              # wallet connect + network switch
   lib/
@@ -126,25 +129,35 @@ vercel.json                 # COOP/COEP/CSP headers + SPA rewrite
 
 ## Adding a new ERC-20 ↔ ERC-7984 pair
 
-The registry is read **live from chain**, so most of the time there's nothing to do:
+VeilX sources pairs **hybrid**: the on-chain registry is authoritative, and a local config is merged on top. You have two ways to add a pair, depending on whether it's registered on-chain.
 
-1. **Register the pair on-chain** in Zama's wrapper registry (deploy/point an ERC-7984 wrapper at the underlying ERC-20 and register the pair). VeilX calls `getTokenConfidentialTokenPairs()` on each render, so the new pair shows up in the grid automatically — symbol, name, and decimals are fetched on-chain — and is immediately wrappable/unwrappable. **No frontend change required.**
-2. **(Optional) Expose a faucet button** for a mintable mock: append one entry to `SEPOLIA_MOCKS` in [`src/config.ts`](src/config.ts) —
+### A. Pair is registered on-chain → zero code
 
-   ```ts
-   {
-     symbol: "FOOMock",
-     cSymbol: "cFOOMock",
-     underlying: "0x…",   // mintable ERC-20 (public mint(address,uint256))
-     wrapper:    "0x…",   // its ERC-7984 cToken
-     decimals: 18,
-     isMock: true,
-   }
-   ```
+If the pair exists in Zama's Wrappers Registry, there's **nothing to do**. VeilX calls `getTokenConfidentialTokenPairs()` on every render, so the pair appears in the grid automatically — symbol/name/decimals fetched on-chain — and is immediately wrappable, unwrappable, and decryptable.
 
-   That's the only code touch, and only for faucet minting — discovery, wrap/unwrap, and decrypt all work off the on-chain registry without it.
+### B. Custom or not-yet-registered pair → one local config entry
 
-To support a **new network** entirely, add its registry address to `REGISTRY_ADDRESS`, its chain + RPC to `wagmiConfig`, and its `*Config` transport to the `RelayerWeb` map in [`src/providers.tsx`](src/providers.tsx).
+For a dev deployment or a pair you haven't registered on-chain, add it to `CUSTOM_PAIRS` in [`src/config.ts`](src/config.ts). It's merged on top of the on-chain registry (on-chain wins on address collision) and rendered with a `local` badge:
+
+```ts
+// src/config.ts
+export const CUSTOM_PAIRS: Record<number, CustomPair[]> = {
+  [SEPOLIA_ID]: [
+    {
+      tokenAddress:             "0xYourErc20...",        // underlying ERC-20
+      confidentialTokenAddress: "0xYourErc7984Wrapper...", // its ERC-7984 cToken
+      symbol: "DEVUSD", cSymbol: "cDEVUSD", name: "Dev USD", decimals: 6,
+    },
+  ],
+  [MAINNET_ID]: [],
+};
+```
+
+That single entry makes the pair show up in the grid and powers its full wrap / unwrap / decrypt flow — no other change needed. (To also give it a faucet mint button on Sepolia, and the underlying exposes a public `mint(address,uint256)`, additionally append it to `SEPOLIA_MOCKS` in the same file with `isMock: true`.)
+
+### A whole new network
+
+Add its registry address to `REGISTRY_ADDRESS`, its chain + RPC to `wagmiConfig`, and its `*Config` transport to the `RelayerWeb` map in [`src/providers.tsx`](src/providers.tsx).
 
 ## Privacy model
 

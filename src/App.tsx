@@ -1,5 +1,6 @@
 import { Header } from "./components/Header";
 import { RegistryGrid } from "./components/RegistryGrid";
+import { DecryptAny } from "./components/DecryptAny";
 import { Faucet } from "./components/Faucet";
 
 export function App() {
@@ -8,6 +9,7 @@ export function App() {
       <Header />
       <main className="main">
         <RegistryGrid />
+        <DecryptAny />
         <Faucet />
       </main>
       <footer className="footer">

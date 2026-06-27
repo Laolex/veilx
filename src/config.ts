@@ -104,6 +104,36 @@ export const SEPOLIA_MOCKS: KnownToken[] = [
   },
 ];
 
+// ── Custom / dev-only pairs (local config) ───────────────────────────────────
+// HYBRID REGISTRY: the on-chain Wrappers Registry (getTokenConfidentialTokenPairs)
+// is the primary source of truth — see useRegistryPairs. These local entries are
+// MERGED IN on top of it, for pairs not yet registered on-chain, dev/local
+// deployments, or testing. On address collision the on-chain pair always wins, so
+// adding a here-listed pair that later gets registered on-chain is a no-op.
+// Metadata you provide here is used as-is (no on-chain enrichment), so set symbol/
+// cSymbol/decimals for a clean card; omit them and the UI falls back to addresses.
+export interface CustomPair {
+  tokenAddress: `0x${string}`;            // underlying ERC-20
+  confidentialTokenAddress: `0x${string}`; // ERC-7984 wrapper
+  symbol?: string;
+  cSymbol?: string;
+  name?: string;
+  decimals?: number;
+}
+
+export const CUSTOM_PAIRS: Record<number, CustomPair[]> = {
+  [SEPOLIA_ID]: [
+    // Example — a dev-only pair not (yet) in the on-chain registry. Uncomment and
+    // fill in real addresses to surface it in the grid with a "local" badge:
+    // {
+    //   tokenAddress: "0xYourErc20...",
+    //   confidentialTokenAddress: "0xYourErc7984Wrapper...",
+    //   symbol: "DEVUSD", cSymbol: "cDEVUSD", name: "Dev USD", decimals: 6,
+    // },
+  ],
+  [MAINNET_ID]: [],
+};
+
 // ── Registry ABI ──────────────────────────────────────────────────────────────
 
 export const REGISTRY_ABI = [

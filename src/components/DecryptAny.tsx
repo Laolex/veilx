@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, type KeyboardEvent } from "react";
 import { useAccount, useChainId, useReadContract, useSwitchChain } from "wagmi";
 import { useConfidentialBalance, matchZamaError } from "@zama-fhe/react-sdk";
 import { isAddress, formatUnits } from "viem";
@@ -69,69 +69,46 @@ export function DecryptAny() {
     }
   }, [valid, supportedChain, refetch]);
 
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Enter" && valid && supportedChain && !isFetching) handleDecrypt();
+  };
+
   return (
-    <section className="decryptany-section">
-      <div className="section-header">
-        <div>
-          <h2 className="section-title">Decrypt any ERC-7984 balance</h2>
-          <p className="section-sub">
-            Paste any confidential token address — registered or not — and reveal your own encrypted
-            balance. One EIP-712 signature; the cleartext is returned only to you, never on-chain.
-          </p>
-        </div>
+    <div className="lookup-bar">
+      <div className={`lookup-input-wrap ${input && !valid ? "invalid" : ""}`}>
+        <span className="lookup-icon">🔎</span>
+        <input
+          className="lookup-input"
+          type="text"
+          spellCheck={false}
+          placeholder="Decrypt any ERC-7984 — paste a token address"
+          value={input}
+          onChange={(e) => setInput(e.target.value.trim())}
+          onKeyDown={onKeyDown}
+        />
+        {!isConnected ? (
+          <span className="lookup-hint">Connect wallet</span>
+        ) : !supportedChain ? (
+          <button className="lookup-btn" onClick={() => switchChain({ chainId: SEPOLIA_ID })} disabled={switching}>
+            {switching ? "Switching…" : "Switch to Sepolia"}
+          </button>
+        ) : (
+          <button className="lookup-btn" onClick={handleDecrypt} disabled={!valid || isFetching}>
+            {isFetching && <span className="spinner" />}
+            {isFetching ? "Decrypting…" : "Decrypt ↗"}
+          </button>
+        )}
       </div>
 
-      {!isConnected ? (
-        <div className="faucet-notice">Connect your wallet to decrypt a balance.</div>
-      ) : (
-        <div className="decryptany-box">
-          <div className="amount-row">
-            <input
-              className="amount-input"
-              type="text"
-              spellCheck={false}
-              placeholder="0x… ERC-7984 token address"
-              value={input}
-              onChange={(e) => setInput(e.target.value.trim())}
-            />
-          </div>
-
-          {input && !valid && (
-            <div className="decrypt-error">Not a valid address.</div>
-          )}
-
-          {!supportedChain ? (
-            <button
-              className="action-btn"
-              onClick={() => switchChain({ chainId: SEPOLIA_ID })}
-              disabled={switching}
-            >
-              {switching && <span className="spinner" />}
-              {switching ? "Switching…" : "Switch to Sepolia to decrypt"}
-            </button>
-          ) : (
-            <button
-              className={`action-btn ${isFetching ? "loading" : ""} ${errorMsg ? "error" : ""}`}
-              onClick={handleDecrypt}
-              disabled={!valid || isFetching}
-            >
-              {isFetching && <span className="spinner" />}
-              {isFetching ? "Decrypting…" : "Sign to decrypt ↗"}
-            </button>
-          )}
-
-          {revealed && !isFetching && balance !== undefined && (
-            <div className="decryptany-result">
-              <span className="decryptany-result-label">Your balance on {netName}</span>
-              <span className="decryptany-result-val">
-                {Number(formatUnits(balance, dec)).toLocaleString(undefined, { maximumFractionDigits: 6 })}
-              </span>
-            </div>
-          )}
-
-          {errorMsg && !isFetching && <div className="decrypt-error">{errorMsg}</div>}
+      {revealed && !isFetching && balance !== undefined && (
+        <div className="lookup-result">
+          Your balance on {netName}:{" "}
+          <strong>{Number(formatUnits(balance, dec)).toLocaleString(undefined, { maximumFractionDigits: 6 })}</strong>
         </div>
       )}
-    </section>
+      {(errorMsg || (input && !valid)) && !isFetching && (
+        <div className="lookup-error">{errorMsg || "Not a valid address."}</div>
+      )}
+    </div>
   );
 }

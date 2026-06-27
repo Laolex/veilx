@@ -8,8 +8,8 @@ export function App() {
     <div className="app">
       <Header />
       <main className="main">
-        <RegistryGrid />
         <DecryptAny />
+        <RegistryGrid />
         <Faucet />
       </main>
       <footer className="footer">

@@ -627,28 +627,94 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
-/* ── Decrypt any ERC-7984 ────────────────────────────────────────────────────── */
-.decryptany-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
+/* ── Decrypt any ERC-7984 (compact Etherscan-style lookup bar) ───────────────── */
+.lookup-bar {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.decryptany-result {
+.lookup-input-wrap {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  background: rgba(5, 150, 105, 0.08);
-  border: 1px solid rgba(5, 150, 105, 0.25);
-  border-radius: var(--radius-sm);
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.decryptany-result-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.decryptany-result-val { font-size: 18px; font-weight: 700; font-family: "JetBrains Mono", monospace; color: var(--conf-hi); }
+.lookup-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+.lookup-input-wrap.invalid {
+  border-color: var(--danger);
+}
+
+.lookup-icon {
+  font-size: 14px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.lookup-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 14px;
+  font-family: "JetBrains Mono", monospace;
+}
+.lookup-input::placeholder {
+  color: var(--text-muted);
+  font-family: inherit;
+}
+
+.lookup-hint {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0 12px;
+}
+
+.lookup-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.lookup-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.lookup-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.lookup-result {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.lookup-result strong {
+  color: var(--conf-hi);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 15px;
+}
+
+.lookup-error {
+  padding: 4px 16px;
+  font-size: 12px;
+  color: var(--danger);
+}
 
 /* ── Footer ─────────────────────────────────────────────────────────────────── */
 .footer {

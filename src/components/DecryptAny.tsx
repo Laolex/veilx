@@ -102,8 +102,19 @@ export function DecryptAny() {
 
       {revealed && !isFetching && balance !== undefined && (
         <div className="lookup-result">
-          Your balance on {netName}:{" "}
-          <strong>{Number(formatUnits(balance, dec)).toLocaleString(undefined, { maximumFractionDigits: 6 })}</strong>
+          <span>
+            Your balance on {netName}:{" "}
+            <strong>{Number(formatUnits(balance, dec)).toLocaleString(undefined, { maximumFractionDigits: 6 })}</strong>
+          </span>
+          <button
+            className="lookup-refresh"
+            onClick={handleDecrypt}
+            disabled={isFetching}
+            title="Re-decrypt latest balance"
+            aria-label="Refresh balance"
+          >
+            ↻
+          </button>
         </div>
       )}
       {(errorMsg || (input && !valid)) && !isFetching && (
